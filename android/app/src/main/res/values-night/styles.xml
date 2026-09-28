@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        FitFudge dark-mode launch theme (Android OS dark mode enabled).
+        Identical to the light variant since FitFudge is always dark-themed.
+    -->
+    <style name="LaunchTheme" parent="@android:style/Theme.Black.NoTitleBar">
+        <item name="android:windowBackground">@drawable/launch_background</item>
+        <item name="android:windowFullscreen">false</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <item name="android:statusBarColor">@color/fitfudge_background</item>
+        <item name="android:navigationBarColor">@color/fitfudge_background</item>
+    </style>
+
+    <style name="NormalTheme" parent="@android:style/Theme.Black.NoTitleBar">
+        <item name="android:windowBackground">@color/fitfudge_background</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <item name="android:statusBarColor">@color/fitfudge_background</item>
+        <item name="android:navigationBarColor">@color/fitfudge_surface</item>
+    </style>
+</resources>

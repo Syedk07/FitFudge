@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- FitFudge brand colours -->
+    <!-- Deep espresso brown — app background / splash -->
+    <color name="fitfudge_background">#110C08</color>
+    <!-- Warm parchment gold — primary accent -->
+    <color name="fitfudge_primary">#CFB595</color>
+    <!-- Deep brown — used for surfaces -->
+    <color name="fitfudge_surface">#1A1008</color>
+</resources>

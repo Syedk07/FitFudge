@@ -1,0 +1,47 @@
+name: fitfudge_flutter
+description: FitFudge - Elite Athletic Training & Performance System
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State management
+  provider: ^6.1.2
+
+  # Local SQLite database (requires Android minSdk 21, iOS 12.0+)
+  sqflite: ^2.3.3+1
+
+  # File-path utilities used by sqflite for DB location
+  path: ^1.9.0
+
+  # Date/time formatting (intl package)
+  intl: ^0.19.0
+
+  # iOS-style icons (used for cupertino icon fallbacks)
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  # Official Flutter lint rules
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+
+  # Assets — add image / font entries here when needed.
+  # assets:
+  #   - assets/images/
+
+  # Fonts — Roboto is bundled with the Flutter engine; no entry needed.
+  # To add custom fonts:
+  # fonts:
+  #   - family: MyFont
+  #     fonts:
+  #       - asset: assets/fonts/MyFont-Regular.ttf

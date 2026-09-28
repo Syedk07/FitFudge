@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- FitFudge launch/splash background — deep espresso brown -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Brand background: #110C08 (near-black warm brown) -->
+    <item android:drawable="@color/fitfudge_background" />
+</layer-list>

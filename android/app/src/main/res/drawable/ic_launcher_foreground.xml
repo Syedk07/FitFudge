@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- FitFudge adaptive icon foreground — dumbbell icon in warm parchment gold #CFB595 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Dumbbell bar (horizontal centre) -->
+    <path
+        android:fillColor="#CFB595"
+        android:pathData="M38,50 L70,50 L70,58 L38,58 Z" />
+
+    <!-- Left collar -->
+    <path
+        android:fillColor="#CFB595"
+        android:pathData="M28,44 L40,44 L40,64 L28,64 Z" />
+
+    <!-- Left weight plate outer -->
+    <path
+        android:fillColor="#CFB595"
+        android:pathData="M18,38 L30,38 L30,70 L18,70 Z" />
+
+    <!-- Right collar -->
+    <path
+        android:fillColor="#CFB595"
+        android:pathData="M68,44 L80,44 L80,64 L68,64 Z" />
+
+    <!-- Right weight plate outer -->
+    <path
+        android:fillColor="#CFB595"
+        android:pathData="M78,38 L90,38 L90,70 L78,70 Z" />
+</vector>
