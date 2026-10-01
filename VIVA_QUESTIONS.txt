@@ -1,0 +1,680 @@
+============================================================
+  PROJECT VIVA & TECHNICAL INTERVIEW QUESTIONS
+============================================================
+
+  Project:       FitFudge — Elite Athletic Training & Performance System
+  Language:      Dart (Flutter SDK >= 3.0)
+  Platform:      Android, iOS, Web, Windows, macOS, Linux (cross-platform)
+  Architecture:  Provider + ChangeNotifier (MVVM-style)
+  Database:      SQLite via sqflite (local, on-device)
+  Key Libraries: provider ^6.1.2, sqflite ^2.3.3, path ^1.9.0, intl ^0.19.0
+  Deployment:    Local (no cloud hosting; data stored on-device)
+  Auth:          None (mock UserAccount data; no real authentication)
+
+============================================================
+  SECTION 1: PROJECT OVERVIEW
+============================================================
+
+Q1.  What is FitFudge and what problem does it solve?
+
+     Topics to prepare:
+     The purpose of a local-first fitness tracking app, target users (athletes /
+     fitness enthusiasts), offline data access, no dependency on internet or
+     external accounts.
+
+Q2.  Who are the intended users of FitFudge, and what are the main things
+     they can do inside the app?
+
+Q3.  FitFudge stores all data locally on the device. What are the advantages
+     of this design choice for a fitness app, and what are the trade-offs?
+
+     Topics to prepare:
+     Offline-first, privacy, no server costs, single-device limitation, no
+     cloud backup, data loss if the app is uninstalled.
+
+Q4.  The app has five main screens: Dashboard, Exercise Library, Workouts,
+     History, and Profile. Walk through the user journey from opening the app
+     to completing and reviewing a workout.
+
+Q5.  What are the current limitations of FitFudge that you would address in a
+     future version?
+
+     Topics to prepare:
+     No real authentication, no cloud sync, no charts/graphs for progress,
+     no push notifications, no social/sharing features, no rest timer,
+     placeholder test suite.
+
+Q6.  The UserAccount model in the database stores a membershipTier, userId,
+     and authProvider, but these are hardcoded mock values. Why do you think
+     this structure was put in place even though authentication is not
+     implemented?
+
+============================================================
+  SECTION 2: TECHNOLOGY STACK
+============================================================
+
+Q7.  Why was Flutter and Dart chosen for this project instead of building
+     separate native Android and iOS apps?
+
+     Topics to prepare:
+     Single codebase, hot reload, cross-platform (mobile + web + desktop),
+     Dart's null safety, widget-tree UI model.
+
+Q8.  What version constraints does this project have, and where are they
+     defined?
+
+     Topics to prepare:
+     pubspec.yaml, sdk: '>=3.0.0 <4.0.0', dependency version ranges with
+     caret (^) operator meaning "compatible updates".
+
+Q9.  What is the role of each external package in this project?
+     Specifically: provider, sqflite, path, intl.
+
+     Topics to prepare:
+     provider = reactive state management; sqflite = SQLite wrapper for
+     Flutter; path = cross-platform file path utilities used to locate the DB
+     file; intl = date/time formatting (DateFormat used in history and
+     measurements screens).
+
+Q10. The intl package is used in this project. Give a specific example of
+     where it is used and what it does.
+
+     Topics to prepare:
+     DateFormat('EEE, MMM d').format(...) in dashboard_screen.dart and
+     DateFormat('EEE, MMM d, y') in body_measurements_screen.dart and
+     workout_history_screen.dart — converts millisecond timestamps to
+     human-readable date strings.
+
+Q11. Why is the path package needed alongside sqflite? Could you use sqflite
+     without it?
+
+     Topics to prepare:
+     getDatabasesPath() returns the OS-specific directory; join() from path
+     constructs the correct file path across platforms. Technically sqflite
+     could accept a raw string, but using path ensures cross-platform
+     correctness.
+
+Q12. flutter_lints is listed under dev_dependencies. What is it for, and why
+     is it separate from regular dependencies?
+
+     Topics to prepare:
+     Static analysis / lint rules, dev_dependencies are not bundled in the
+     release build, flutter analyze command.
+
+============================================================
+  SECTION 3: ARCHITECTURE
+============================================================
+
+Q13. Describe the overall architecture of FitFudge. How is the code organised
+     into layers?
+
+     Topics to prepare:
+     lib/data (models, DB, calculator, exercise seed data),
+     lib/providers (state management layer),
+     lib/ui (screens, theme, widgets) — a clean separation of concerns
+     similar to MVVM.
+
+Q14. What is the Provider pattern and why was it chosen for state management
+     over alternatives like Riverpod, Bloc, or GetX?
+
+     Topics to prepare:
+     ChangeNotifier + notifyListeners(), InheritedWidget under the hood,
+     simplicity, Flutter-official recommendation for mid-size apps,
+     MultiProvider at the root of the widget tree in main.dart.
+
+Q15. There are four providers: UserProvider, WorkoutProvider,
+     ExerciseProvider, and BodyMeasurementProvider. Why are they kept
+     separate rather than using one large provider?
+
+     Topics to prepare:
+     Single responsibility principle, widgets only rebuild when their
+     specific provider changes, easier to maintain and test independently.
+
+Q16. How does data flow from the SQLite database to the UI in FitFudge?
+     Trace the path for loading and displaying workout sessions.
+
+     Topics to prepare:
+     SplashScreen calls WorkoutProvider.loadAll() → which calls
+     DatabaseHelper.getAllSessions() → which queries workout_sessions table
+     → returns List<WorkoutSession> → stored in _sessions in provider →
+     UI uses context.watch<WorkoutProvider>() → rebuilds when
+     notifyListeners() is called.
+
+Q17. The DatabaseHelper class uses a singleton pattern. Explain what a
+     singleton is and why it is appropriate here.
+
+     Topics to prepare:
+     static final DatabaseHelper instance = DatabaseHelper._internal();
+     private constructor, single shared Database object (_db), prevents
+     multiple simultaneous connections to the same SQLite file.
+
+Q18. explain how the SplashScreen loads all application data before navigating
+     to the HomeScreen. What would happen if one of the data loads fails?
+
+     Topics to prepare:
+     Future.wait([...]) runs all four provider load calls in parallel,
+     minimum 1.5s delay, Navigator.pushReplacement with FadeTransition.
+     If a Future throws, Future.wait propagates the error — there is no
+     try/catch, so an uncaught exception would leave the splash screen
+     frozen.
+
+Q19. The HomeScreen uses a Stack to display both the screen content and the
+     active workout banner simultaneously. Why a Stack instead of placing the
+     banner inside the BottomNavigationBar or AppBar?
+
+     Topics to prepare:
+     The banner needs to float above the nav bar but below it visually,
+     Stack allows precise Positioned placement; the banner height is
+     calculated dynamically using kBottomNavigationBarHeight +
+     MediaQuery.of(context).padding.bottom to account for iPhone home
+     indicator.
+
+============================================================
+  SECTION 4: DATABASE
+============================================================
+
+Q20. Which database is used in FitFudge, and why is SQLite appropriate for a
+     mobile fitness app?
+
+     Topics to prepare:
+     SQLite is embedded (no server), zero-configuration, ACID compliant,
+     fast for single-user local reads/writes, ideal for offline apps.
+
+Q21. List the seven database tables and explain what each one stores.
+
+     Topics to prepare:
+     user_profile, user_account, exercises, workout_templates,
+     workout_sessions, workout_set_records, body_measurements — know the
+     columns and purpose of each.
+
+Q22. How is the database created and initialised on first launch?
+
+     Topics to prepare:
+     openDatabase() with version: 1 and onCreate callback, _onCreate runs
+     all seven CREATE TABLE statements. The database file is named
+     fitfudge.db and placed at the path returned by getDatabasesPath().
+
+Q23. The user_profile table uses id = 1 as a fixed primary key. Why? What
+     does ConflictAlgorithm.replace do when saving the profile?
+
+     Topics to prepare:
+     Single-user app, always overwrite the same row, INSERT OR REPLACE
+     semantics — deletes the existing row and inserts the new one if the
+     primary key conflicts.
+
+Q24. Explain the relationship between workout_sessions and
+     workout_set_records. How is referential integrity handled?
+
+     Topics to prepare:
+     workout_set_records.sessionId is a FOREIGN KEY referencing
+     workout_sessions.id. When a session is deleted, the code manually
+     deletes the corresponding set records in deleteSession() because SQLite
+     does not enforce CASCADE DELETE by default without PRAGMA
+     foreign_keys = ON (which sqflite does not enable automatically).
+
+Q25. How are personal records calculated? Walk through the SQL query used.
+
+     Topics to prepare:
+     rawQuery with SELECT exerciseId, MAX(weightKg), MAX(reps),
+     MAX(weightKg * reps) AS maxVolumeSet, COUNT(*) FROM
+     workout_set_records GROUP BY exerciseId ORDER BY maxWeightKg DESC.
+     These are computed on every loadAll() call — they are not stored as a
+     separate table.
+
+Q26. The exercise seed data (kExercises) is a compile-time const List in
+     exercise_data.dart. On first launch, it is inserted into the exercises
+     table. How does the app detect whether seeding has already happened, and
+     why is this important?
+
+     Topics to prepare:
+     exercisesSeeded() runs SELECT COUNT(*) FROM exercises — if count > 0,
+     skip seeding. Without this check, exercises would be duplicated on
+     every launch (though conflictAlgorithm: ignore would silently skip
+     them, it wastes a batch operation).
+
+Q27. The exerciseIdsJson column in workout_templates stores exercise IDs as a
+     comma-separated string, not as a true foreign-key relationship or JSON
+     array. What are the drawbacks of this approach?
+
+     Topics to prepare:
+     Cannot query exercises by template with SQL JOINs, no referential
+     integrity (deleted exercise ID stays in the string), parsing required
+     in Dart code, harder to extend (e.g. add per-exercise sets count to
+     template). A proper junction table would be more correct.
+
+Q28. How does the app handle nullable body measurement fields such as
+     chestCm, waistCm, and armsCm? How are these stored and retrieved from
+     SQLite?
+
+     Topics to prepare:
+     Dart nullable types (double?), stored as REAL (nullable column) in
+     SQLite, retrieved with null check: m['chestCm'] != null ?
+     (m['chestCm'] as num).toDouble() : null.
+
+============================================================
+  SECTION 5: CORE FEATURES
+============================================================
+
+Q29. Walk through exactly what happens from when a user taps "Finish Workout"
+     to when the session appears in the History screen.
+
+     Topics to prepare:
+     finishWorkout() → timer cancelled → loops through activeExercises,
+     only saves sets where isCompleted == true → calculates totalVolume
+     (weight * reps for each set) → inserts WorkoutSession → gets sessionId
+     → maps all set records with that sessionId → batch inserts
+     WorkoutSetRecords → reloads _sessions and _prs from DB →
+     notifyListeners() → resets active workout state → UI rebuilds.
+
+Q30. The workout timer in WorkoutProvider uses dart:async Timer. How does it
+     work, and what happens to the timer when the user navigates away from the
+     active workout screen?
+
+     Topics to prepare:
+     Timer.periodic fires every second, increments _elapsedSeconds,
+     calls notifyListeners(). The timer lives in the Provider (not the
+     Screen widget), so it keeps running even if the screen is popped.
+     The active workout banner on HomeScreen continues to show the elapsed
+     time. Timer is cancelled in finishWorkout(), cancelWorkout(), and
+     dispose().
+
+Q31. The updateSetWeight and updateSetReps methods in WorkoutProvider
+     deliberately do NOT call notifyListeners(). Why?
+
+     Topics to prepare:
+     Text fields in _SetRow have their own TextEditingController and manage
+     their own state locally. Calling notifyListeners() on every keystroke
+     would rebuild the entire active workout list, resetting focus and
+     causing a poor typing experience. The values are read back on
+     finishWorkout().
+
+Q32. How does the exercise search and filtering work in ExerciseProvider?
+     What fields are searched?
+
+     Topics to prepare:
+     _applyFilters() is called on every search/filter change. Search checks
+     name, primaryMuscle, and equipment (all case-insensitive). Separate
+     filters for muscle group, difficulty, and equipment can be stacked.
+     _filtered is the derived list; _allExercises is the full list from DB.
+
+Q33. How are the Fitness Calculator results displayed on the Dashboard, and
+     how do they update when the user changes their profile?
+
+     Topics to prepare:
+     DashboardScreen calls FitnessCalculator.calculateMacros(profile)
+     directly (pure function, no caching). context.watch<UserProvider>()
+     means any profile change triggers a rebuild of DashboardScreen,
+     which recalculates macros, BMI, TDEE automatically.
+
+Q34. Explain the Mifflin-St Jeor equation as implemented in FitnessCalculator.
+     Why is there a different formula for male, female, and other?
+
+     Topics to prepare:
+     Male: 10w + 6.25h - 5a + 5
+     Female: 10w + 6.25h - 5a - 161
+     Other: average of male and female formulas
+     The formula accounts for metabolic differences. "Other" uses an average
+     as a pragmatic approximation.
+
+Q35. How does the 1-Rep Max calculator work? What formula is used?
+
+     Topics to prepare:
+     Epley formula: weight × (1 + reps / 30). If reps == 1, returns weight
+     directly. The screen also shows a training percentages table (60%–95%
+     of 1RM). The result updates only when the Calculate button is tapped
+     (no live calculation).
+
+Q36. How does the streak calculation work? What is its time complexity, and
+     when could it become a performance concern?
+
+     Topics to prepare:
+     The dashboardStats getter iterates up to 365 days backward from today.
+     For each day, it searches through the entire _sessions list. This is
+     O(365 × N) where N is the number of sessions. With hundreds of
+     sessions this is still fast, but it runs every time the dashboard
+     rebuilds. A more efficient approach would sort sessions and use a
+     set of date strings.
+
+============================================================
+  SECTION 6: SECURITY
+============================================================
+
+Q37. FitFudge has no real authentication. The UserAccount model has hardcoded
+     fields (userId, email, membershipTier). What risks does this create if
+     real authentication were to be added in the future, and what changes
+     would be needed?
+
+     Topics to prepare:
+     The schema is prepared but there is no login/register flow, no password
+     hashing, no token management, no session expiry. To add real auth:
+     integrate Firebase Auth or a backend API, replace hardcoded userId with
+     a real UID, add secure storage for tokens (flutter_secure_storage),
+     add route guards.
+
+Q38. All data is stored in a local SQLite database. Who can access this
+     database on a real device, and what are the security implications?
+
+     Topics to prepare:
+     On Android, the DB is in the app's private data directory
+     (/data/data/<package>/databases/) — accessible only to the app unless
+     the device is rooted. On iOS, it is in the app's sandbox. A rooted or
+     jailbroken device could expose it. For sensitive data, SQLCipher
+     encryption could be added.
+
+Q39. There is no input validation for reasonable value ranges in the profile
+     edit sheet (for example, a user could enter age = -5 or height = 0).
+     What problems could this cause and how would you fix it?
+
+     Topics to prepare:
+     FitnessCalculator would receive invalid inputs producing nonsensical
+     BMR/TDEE/macro values. Division by zero in BMI if height = 0.
+     Fix: add client-side range validation before calling updateProfileField
+     (e.g. age 10–120, height 100–250 cm, weight 20–300 kg).
+
+Q40. The project stores no API keys, tokens, or secrets. What would need to
+     change regarding secrets management if a backend or third-party API
+     (such as Firebase) were added?
+
+     Topics to prepare:
+     Never commit API keys to GitHub, use .env files or flutter_dotenv,
+     gitignore secrets files, use platform-specific config (google-
+     services.json / GoogleService-Info.plist), store sensitive tokens in
+     flutter_secure_storage rather than sqflite.
+
+============================================================
+  SECTION 7: UI, THEME, AND USER EXPERIENCE
+============================================================
+
+Q41. FitFudge uses a single dark theme throughout the app. How is this
+     enforced, and what prevents the user from switching to light mode?
+
+     Topics to prepare:
+     MaterialApp sets theme: AppTheme.darkTheme, darkTheme:
+     AppTheme.darkTheme, and themeMode: ThemeMode.dark. Both theme and
+     darkTheme point to the same dark theme, so OS dark/light mode
+     preference has no effect.
+
+Q42. The AppTheme uses Material 3 (useMaterial3: true). In the ColorScheme,
+     the gold accent colour (#CFB595) is mapped to primary, not secondary.
+     Why?
+
+     Topics to prepare:
+     In Material 3, ColorScheme.primary drives most interactive widget
+     colours (ElevatedButton, FAB, checkbox fill, etc.). By mapping the
+     visible gold accent to primary, all interactive components
+     automatically use the brand colour without needing per-widget overrides.
+
+Q43. How does the app handle the iPhone home indicator (bottom safe area) in
+     the navigation bar and the active workout banner?
+
+     Topics to prepare:
+     SafeArea(top: false) wraps the BottomNavigationBar. The workout
+     banner's bottom offset is calculated as kBottomNavigationBarHeight +
+     MediaQuery.of(context).padding.bottom, so it floats above the nav bar
+     including the home indicator height.
+
+Q44. How does the app communicate muscle groups visually in the exercise
+     library and during an active workout?
+
+     Topics to prepare:
+     muscleGroupColor() function in app_theme.dart maps muscle group names
+     to specific colours (chest = red, back = blue, legs = green, etc.).
+     Used by MuscleChip, ExerciseCard icon background, and the workout card
+     icon colour. This makes it easy to scan exercises at a glance.
+
+============================================================
+  SECTION 8: TESTING
+============================================================
+
+Q45. The test file widget_test.dart contains only a placeholder test that
+     always passes. How would you write meaningful tests for this project?
+     Give two specific examples.
+
+     Topics to prepare:
+     Unit test FitnessCalculator (e.g. calculateBMR for a known profile
+     input → expected value). Unit test DatabaseHelper CRUD operations using
+     an in-memory SQLite database (sqflite supports openDatabase(':memory:')).
+     Widget test the active workout set completion toggle. Integration test
+     the full finish-workout flow.
+
+Q46. Which parts of FitFudge would be easiest to unit test, and which would
+     be hardest? Why?
+
+     Topics to prepare:
+     Easiest: FitnessCalculator (pure functions, no dependencies).
+     DashboardStats getter (pure computation).
+     Hardest: screens with sqflite dependency (need to mock or use
+     in-memory DB), WorkoutProvider timer (async, time-dependent).
+
+============================================================
+  SECTION 9: PERFORMANCE AND SCALABILITY
+============================================================
+
+Q47. The splash screen loads all four providers simultaneously using
+     Future.wait(). What is the advantage of this over loading them
+     sequentially, and what is the potential downside?
+
+     Topics to prepare:
+     Parallel loading is faster (total time = slowest task, not the sum).
+     Downside: if the DB is busy, concurrent reads could block each other.
+     In practice with SQLite and read-only operations this is fine, but
+     concurrent writes would need serialisation.
+
+Q48. Currently, getAllSessions() returns every session ever recorded, sorted
+     by date. What would happen to app performance and memory usage if a
+     user had 1,000+ workout sessions?
+
+     Topics to prepare:
+     All sessions loaded into memory at once, list could grow large,
+     ListView.builder is efficient (only renders visible items) but the
+     underlying list is still in RAM. Solution: pagination with LIMIT/OFFSET
+     in SQL, lazy loading, or date-range filtering.
+
+Q49. If FitFudge needed to support multiple users on the same device (like a
+     family sharing a phone), what architectural changes would be required?
+
+     Topics to prepare:
+     Add userId foreign keys to all tables (workout_sessions, body_
+     measurements, workout_templates), add a proper users table with
+     authentication, filter all queries by userId, implement a login/logout
+     flow, isolate personal data per user.
+
+============================================================
+  SECTION 10: GITHUB AND PROJECT MANAGEMENT
+============================================================
+
+Q50. The .gitignore excludes .dart_tool/, build/, and .pub-cache/. Why
+     should these directories never be committed to GitHub, and what file
+     should be committed to ensure reproducible dependency versions?
+
+     Topics to prepare:
+     .dart_tool/ = generated build artifacts, machine-specific.
+     build/ = compiled output (APKs, .app, etc.).
+     .pub-cache/ = package download cache.
+     pubspec.lock SHOULD be committed — it pins exact resolved versions of
+     all transitive dependencies so every developer gets identical packages.
+
+============================================================
+  SECTION 11: REAL-WORLD SCENARIO QUESTIONS
+============================================================
+
+Q51. A user reports that after finishing a workout, none of the completed sets
+     appear in the History screen. How would you investigate and fix this?
+
+     Topics to prepare:
+     Check finishWorkout() — only sets where isCompleted == true are saved.
+     The user may not have tapped the checkmark button. Also verify that
+     _sessions is reloaded after insert (it is: _sessions = await
+     db.getAllSessions()). Check that the session was actually inserted by
+     querying the DB directly.
+
+Q52. The app works perfectly on Android but the exercise library shows no
+     exercises when running on iOS for the first time. How would you debug
+     this?
+
+     Topics to prepare:
+     Check exercisesSeeded() and the seeding path. Verify
+     getDatabasesPath() returns a valid writable path on iOS. Check if
+     the batch insert of kExercises throws a silent error. Confirm the
+     sqflite version supports iOS correctly.
+
+Q53. During an active workout, the user receives a phone call and the app
+     goes to the background for 10 minutes. What happens to the workout
+     timer and the session data?
+
+     Topics to prepare:
+     The Timer.periodic in WorkoutProvider continues to run in the
+     background (Dart isolate keeps running). _elapsedSeconds keeps
+     incrementing. When the user returns, the banner shows the correct
+     elapsed time. No data is saved until finishWorkout() is called — if
+     the OS kills the app under memory pressure, the active workout state
+     is lost entirely (no persistence of in-progress workouts).
+
+Q54. A user deletes a workout session. What gets deleted from the database,
+     and could any data remain orphaned?
+
+     Topics to prepare:
+     deleteSession() deletes from workout_sessions WHERE id = ? AND
+     from workout_set_records WHERE sessionId = ?. Personal records are
+     recomputed from remaining set records. However, foreign key enforcement
+     is manual (PRAGMA foreign_keys is not enabled), so a bug in the delete
+     code could leave orphaned set_records.
+
+============================================================
+  SECTION 12: DEEP TECHNICAL QUESTIONS
+============================================================
+
+Q55. The Singleton pattern in DatabaseHelper lazily initialises the database
+     using the null-coalescing assignment operator (_db ??= ...). What would
+     happen if two async operations both called the database getter
+     simultaneously before _db was initialised?
+
+     Topics to prepare:
+     Dart's event loop is single-threaded, so ??= is effectively atomic
+     within a single isolate. However, two awaiting calls to get database
+     could both pass the null check before _initDatabase() completes,
+     causing two database open operations. A proper fix uses a Completer
+     or an initialization lock.
+
+Q56. The exerciseIdsJson field in WorkoutTemplate stores exercise IDs as a
+     comma-separated string. How is this value parsed back into a List when
+     starting a workout, and what could go wrong?
+
+     Topics to prepare:
+     The value is split by comma in the WorkoutTemplates screen to look up
+     each Exercise by ID via ExerciseProvider.getById(). Problems: if an
+     ID contains a comma, parsing breaks; if an exercise was deleted from
+     the DB after the template was created, getById() returns null and must
+     be handled; leading/trailing spaces need trimming.
+
+Q57. Why does the FitnessCalculator implement its own _log10() function
+     instead of using dart:math's log()?
+
+     Topics to prepare:
+     dart:math provides log() (natural log). log10(x) = log(x) / log(10).
+     The manual implementation hardcodes the divisor 2.302585092994046.
+     It also returns 0 for x <= 0 or x == 1 to avoid divide-by-zero in the
+     US Navy body fat formula — but this silently hides invalid measurement
+     inputs rather than surfacing them as errors.
+
+============================================================
+  TOP 10 QUESTIONS TO MASTER
+============================================================
+
+  These are the ten questions most central to demonstrating that you
+  genuinely built and understand this project.
+
+  1.  Q16 — How does data flow from the SQLite database to the UI?
+             Trace the full path for workout sessions.
+
+  2.  Q29 — Walk through exactly what happens from tapping "Finish Workout"
+             to the session appearing in History.
+
+  3.  Q25 — How are personal records calculated? Walk through the SQL query.
+
+  4.  Q24 — Explain the relationship between workout_sessions and
+             workout_set_records and how cascade delete is handled.
+
+  5.  Q31 — Why do updateSetWeight and updateSetReps NOT call
+             notifyListeners()?
+
+  6.  Q34 — Explain the Mifflin-St Jeor equation as implemented, including
+             how the "other" gender case is handled.
+
+  7.  Q14 — What is the Provider pattern and why was it chosen?
+
+  8.  Q18 — How does the SplashScreen load all data and what happens if a
+             load fails?
+
+  9.  Q27 — What are the drawbacks of storing exerciseIdsJson as a
+             comma-separated string instead of a junction table?
+
+  10. Q37 — FitFudge has no real authentication. What would need to change
+             to add it properly?
+
+============================================================
+  PROJECT-SPECIFIC WEAK POINTS TO PREPARE
+============================================================
+
+  These are areas in the actual implementation where a technical interviewer
+  is likely to probe with follow-up questions.
+
+  1.  NO REAL AUTHENTICATION
+      UserAccount has hardcoded mock fields (userId = 'usr_ff_73921',
+      email = 'athlete@fitfudge.com'). There is no login/register screen,
+      no password hashing, and no token management. Be ready to explain
+      what would need to change.
+
+  2.  NO AUTOMATED TESTS
+      widget_test.dart contains only a placeholder test (expect(true,
+      isTrue)). No unit tests for FitnessCalculator, no widget tests for
+      screens, no integration tests. Be ready to describe what you would
+      test first.
+
+  3.  MANUAL CASCADE DELETE (NO FOREIGN KEY ENFORCEMENT)
+      SQLite foreign keys are not enabled (PRAGMA foreign_keys = ON is not
+      called). Referential integrity between workout_sessions and
+      workout_set_records is maintained manually in deleteSession(). A bug
+      here would leave orphaned rows.
+
+  4.  exerciseIdsJson AS COMMA-SEPARATED STRING
+      This is not a proper relational design. It cannot be queried with
+      SQL JOINs, has no referential integrity, and is brittle to parse.
+      A junction table (template_exercises) would be the correct approach.
+
+  5.  IN-PROGRESS WORKOUT NOT PERSISTED
+      If the OS kills the app during an active workout, all set data is
+      lost. There is no draft/checkpoint save mechanism for in-progress
+      sessions.
+
+  6.  STREAK ALGORITHM EFFICIENCY
+      The streak calculation is O(365 × N sessions) and runs inside a
+      computed getter called on every Dashboard rebuild. With a large
+      history this could cause visible jank.
+
+  7.  NO INPUT RANGE VALIDATION
+      The profile edit sheet only checks for parse failure (null). Values
+      like age = -1, height = 0, or weight = 9999 are accepted and passed
+      to FitnessCalculator, potentially producing division by zero (BMI)
+      or nonsensical results.
+
+  8.  SINGLETON DATABASE INITIALISATION RACE CONDITION
+      The lazy _db ??= pattern in DatabaseHelper is safe in practice due
+      to Dart's single-threaded event loop, but two concurrent awaiting
+      callers reaching the getter before initialisation completes could
+      both trigger _initDatabase(). Be prepared to discuss this.
+
+  9.  _log10() MANUAL IMPLEMENTATION
+      The custom log base-10 function in FitnessCalculator does not use
+      dart:math. It silently returns 0 for invalid inputs (x <= 0),
+      which hides bad measurement data rather than surfacing it.
+
+  10. NO DATA BACKUP OR EXPORT
+      All data is in a local SQLite file. There is no export feature, no
+      cloud backup, and no migration strategy. Uninstalling the app or
+      switching devices permanently loses all history.
+
+============================================================
+  END OF VIVA_QUESTIONS.txt
+  Total questions generated: 57
+============================================================
